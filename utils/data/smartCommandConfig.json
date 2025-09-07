@@ -1,0 +1,39 @@
+{
+  "enabled": true,
+  "fuzzyThreshold": 0.4,
+  "contextThreshold": 0.7,
+  "aliases": {
+    "help": ["giup", "trogiup", "huongdan", "h"],
+    "menu": ["danhsach", "list", "ds", "m"],
+    "info": ["thongtin", "information", "i"],
+    "kick": ["duoi", "remove", "k"],
+    "ban": ["cam", "block", "b"],
+    "unban": ["bocam", "unblock", "ub"],
+    "su": ["chat", "talk", "conversation", "s"],
+    "music": ["nhac", "song", "play", "m"],
+    "weather": ["thoitiet", "w"],
+    "time": ["thoigian", "clock", "t"],
+    "ping": ["latency", "p"],
+    "avatar": ["avt", "a"],
+    "rank": ["xephang", "level", "r"],
+    "money": ["tien", "coin", "cash"],
+    "game": ["trochoi", "g"],
+    "admin": ["quanly", "manage", "ad"],
+    "setting": ["caidat", "config"]
+  },
+  "contextKeywords": {
+    "music": ["nhạc", "bài hát", "ca khúc", "music", "song", "play", "phát"],
+    "weather": ["thời tiết", "nắng", "mưa", "weather", "temperature", "nhiệt độ"],
+    "game": ["chơi", "game", "trò chơi", "play", "gaming"],
+    "admin": ["quản lý", "admin", "kick", "ban", "quản trị"],
+    "info": ["thông tin", "info", "information", "chi tiết"],
+    "help": ["giúp", "help", "hướng dẫn", "làm sao", "cách dùng"]
+  },
+  "intentPatterns": {
+    "help": ["làm sao", "cách", "how", "hướng dẫn"],
+    "info": ["thông tin", "info", "information", "chi tiết"],
+    "game": ["chơi", "game", "trò chơi"],
+    "music": ["nhạc", "music", "bài hát"],
+    "admin": ["quản lý", "admin", "kick", "ban"]
+  }
+}

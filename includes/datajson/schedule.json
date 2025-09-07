@@ -1,0 +1,14 @@
+[
+  {
+    "id": "1755855822956_782",
+    "title": "Họp dự án",
+    "scheduleTime": "2025-12-25T01:30:00.000Z",
+    "createdAt": "2025-08-22T09:43:42.956Z",
+    "creatorId": "100048033791608",
+    "threadId": "6379856048761645",
+    "status": "pending",
+    "notified20m": false,
+    "responded": false,
+    "lastReminderAt": null
+  }
+]

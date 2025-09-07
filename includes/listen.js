@@ -76,6 +76,14 @@ module.exports = function({
     Users,
     models
   });
+  
+  // Khởi tạo HandSu handler
+  try {
+    console.log('🚀 HandSu handler sẽ được load tự động');
+  } catch (error) {
+    logger(`Không thể load HandSu handler: ${error}`, 'error');
+  }
+  
   logger(`${api.getCurrentUserID()} - [ ${global.config.PREFIX} ] • ${(!global.config.BOTNAME) ? "This bot was made by CatalizCS and SpermLord" : global.config.BOTNAME}`, "[ BOT INFO ] >");
   const handlers = fs.readdirSync(path.join(__dirname, './handle')).reduce((acc, file) => {
     return {
@@ -90,6 +98,8 @@ module.exports = function({
     };
   }, {});
   return async function(event) {
+    // Bỏ qua sự kiện rỗng hoặc không có threadID để tránh lỗi truy cập thuộc tính
+    if (!event || !event.threadID) return;
     const a = path.join(__dirname, '/../utils/data/approvedThreads.json');
     const b = path.join(__dirname, '/../utils/data/pendingThreads.json');
     if (!fs.existsSync(a)) {
@@ -136,17 +146,44 @@ module.exports = function({
       case "message":
       case "message_reply":
       case "message_unsend":
-        await Promise.all([
-          handlers['handleCommand']({
+        // Xử lý handleCommand trước
+        await handlers['handleCommand']({
+          event
+        });
+        
+        // Chỉ xử lý handleReply nếu handleCommand không xử lý
+        const prefix = global.config.PREFIX || '.';
+        const trimmedBody = event.body ? event.body.trim() : '';
+        const isCommand = trimmedBody.startsWith(prefix);
+        
+        // Nếu không phải lệnh, mới xử lý handleReply
+        if (!isCommand) {
+          await handlers['handleReply']({
             event
-          }),
-          handlers['handleReply']({
+          });
+        }
+        
+        // Xử lý handleCommandEvent
+        await handlers['handleCommandEvent']({
+          event
+        });
+        
+        // Xử lý handleSchedule cho lịch hẹn (tin nhắn)
+        if (handlers['handleSchedule']) {
+          await handlers['handleSchedule']({
             event
-          }),
-          handlers['handleCommandEvent']({
-            event
-          })
-        ]);
+          });
+        }
+        
+        // TẠM THỜI TẮT HANDSU ĐỂ TEST
+        // Chỉ chạy handsu khi hoàn toàn không phải lệnh  
+        // if (!isCommand && trimmedBody && handlers['handsu'] && handlers['handsu'].handleEvent) {
+        //   console.log(`🔍 HandSu: Phát hiện tin nhắn không phải lệnh: "${trimmedBody}"`);
+        //   await handlers['handsu'].handleEvent({
+        //     api,
+        //     event
+        //   });
+        // }
         break;
       case "event":
         await Promise.all([ handlers['handleEvent']({
@@ -156,9 +193,17 @@ module.exports = function({
         ]);
         break;
       case "message_reaction":
+        // Xử lý handleReaction cho các lệnh
         await handlers['handleReaction']({
           event
         });
+        
+        // Xử lý handleSchedule cho lịch hẹn
+        if (handlers['handleSchedule']) {
+          await handlers['handleSchedule']({
+            event
+          });
+        }
         break;
       default:
         break;

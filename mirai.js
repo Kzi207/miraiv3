@@ -37,7 +37,7 @@ global.config = require('./config.json');
 global.configModule = new Object();
 global.moduleData = new Array();
 global.language = new Object();
-const langFile = (readFileSync(`${__dirname}/languages/${global.config.language || "en"}.lang`, { encoding: 'utf-8' })).split(/\r?\n|\r/);
+const langFile = (readFileSync(`${__dirname}/languages/${global.config.language || "en"}.lang`, { encoding: 'utf8' })).split(/\r?\n|\r/);
 const langData = langFile.filter(item => item.indexOf('#') != 0 && item != '');
 for (const item of langData) {
     const getSeparator = item.indexOf('=');
@@ -67,10 +67,49 @@ function onBot({ models }) {
         global.config.version = '3.0.0';
         global.client.timeStart = new Date().getTime();
         global.client.api = api;
+        // Monkey-patch getUserInfo để an toàn hơn trước lỗi Invalid response format
+        const originalGetUserInfo = api.getUserInfo.bind(api);
+        api.getUserInfo = function patchedGetUserInfo(idOrIds, callback) {
+          // Hỗ trợ cả callback và Promise
+          if (typeof callback === 'function') {
+            return originalGetUserInfo(idOrIds, (err, data) => {
+              if (err) {
+                logger(`getUserInfo lỗi: ${err?.message || err}`, 'warn');
+                if (Array.isArray(idOrIds)) {
+                  const empty = {};
+                  for (const x of idOrIds) empty[String(x)] = {};
+                  return callback(null, empty);
+                }
+                return callback(null, { [String(idOrIds)]: {} });
+              }
+              return callback(null, data || {});
+            });
+          }
+          // Promise path
+          return (async () => {
+            try {
+              const res = await originalGetUserInfo(idOrIds);
+              return res || {};
+            } catch (err) {
+              logger(`getUserInfo lỗi: ${err?.message || err}`, 'warn');
+              if (Array.isArray(idOrIds)) {
+                const empty = {};
+                for (const x of idOrIds) empty[String(x)] = {};
+                return empty;
+              }
+              return { [String(idOrIds)]: {} };
+            }
+          })();
+        };
         const userId = api.getCurrentUserID();
-        const user = await api.getUserInfo([userId]);
-        const userName = user[userId]?.name || null;
-        logger(`Đăng nhập thành công - ${userName} (${userId})`, '[ LOGIN ] >');
+        let userName = null;
+        try {
+          const user = await api.getUserInfo([userId]);
+          userName = user?.[userId]?.name || null;
+        } catch (err) {
+          logger(`Lấy tên user thất bại: ${err?.message || err}`, 'warn');
+        }
+        logger(`Đăng nhập thành công - ${userName || 'Unknown'} (${userId})`, '[ LOGIN ] >');
         console.log(require('chalk').yellow(" __  __ ___ ____      _    ___      ____   ___ _____  __     _______" + "\n" + 
           "|  \\/  |_ _|  _ \\    / \\  |_ _|    | __ ) / _ \\_   _| \\ \\   / /___ / " + "\n" +
           "| |\\/| || || |_) |  / _ \\  | |_____|  _ \\| | | || |____\\ \\ / /  |_ \\ " + "\n" +
@@ -122,6 +161,8 @@ function onBot({ models }) {
         writeFileSync('./config.json', JSON.stringify(global.config, null, 4), 'utf8');
         const listener = require('./includes/listen')({ api, models });
         function listenerCallback(error, event) {
+          // Bỏ qua sự kiện rỗng/không hợp lệ để tránh lỗi undefined.threadID
+          if (!event || !event.type) return;
           if (error) {
             if (JSON.stringify(error).includes("601051028565049")) {
               const form = {
@@ -148,6 +189,8 @@ function onBot({ models }) {
           }
           if (["presence", "typ", "read_receipt"].some((data) => data === event?.type)) return;
           if (global.config.DeveloperMode) console.log(event);
+          // Chỉ chuyển tiếp các event có threadID hợp lệ
+          if (!event.threadID) return;
           return listener(event);
         }
         function connect_mqtt() {

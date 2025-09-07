@@ -1,6 +1,7 @@
 module.exports = function ({ api, models, Users, Threads, Currencies }) {
    const stringSimilarity = require('string-similarity'), escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), logger =  require("../../utils/log.js");
     const moment = require("moment-timezone");
+    const SmartCommandParser = require("../../utils/smartCommandParser.js");
     return async function ({ event }) {
     const dateNow = Date.now()
     const time = moment.tz("Asia/Ho_Chi_minh").format("HH:MM:ss DD/MM/YYYY");
@@ -56,12 +57,30 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         }
         if (!command) {
             if (!body.startsWith((threadSetting.hasOwnProperty("PREFIX")) ? threadSetting.PREFIX : PREFIX)) return;
-            var allCommandName = [];
-            const commandValues = commands['keys'](); 
-            for (const cmd of commandValues) allCommandName.push(cmd)
-            const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
-            if (checker.bestMatch.rating >= 0.5) command = client.commands.get(checker.bestMatch.target);
-            else return api.sendMessage(`❎ Lệnh không tồn tại, lệnh gần giống là: ${checker.bestMatch.target}`, threadID, messageID);
+            
+            // Kiểm tra xem Smart Command System có được bật không
+            if (global.config.smartCommandSystem !== false) {
+                // Sử dụng Smart Command Parser để tìm lệnh thông minh
+                const smartParser = new SmartCommandParser();
+                const smartResult = smartParser.parseCommand(commandName, commands);
+                
+                if (smartResult) {
+                    command = smartResult.command;
+                    console.log(`🧠 Smart Command Parser: ${smartResult.matchType} match for "${commandName}" with confidence ${smartResult.confidence}`);
+                } else {
+                    // Tạo phản hồi thông minh khi không tìm thấy lệnh
+                    const smartResponse = smartParser.generateSmartResponse(commandName, commands);
+                    return api.sendMessage(smartResponse, threadID, messageID);
+                }
+            } else {
+                // Fallback về hệ thống cũ
+                var allCommandName = [];
+                const commandValues = commands['keys'](); 
+                for (const cmd of commandValues) allCommandName.push(cmd)
+                const checker = stringSimilarity.findBestMatch(commandName, allCommandName);
+                if (checker.bestMatch.rating >= 0.5) command = commands.get(checker.bestMatch.target);
+                else return api.sendMessage(`❎ Lệnh không tồn tại, lệnh gần giống là: ${checker.bestMatch.target}`, threadID, messageID);
+            }
         }  
         if (commandBanned.get(threadID) || commandBanned.get(senderID)) {
             if (!ADMINBOT.includes(senderID)) {
@@ -114,8 +133,11 @@ module.exports = function ({ api, models, Users, Threads, Currencies }) {
         if (!client.cooldowns.has(command.config.name)) client.cooldowns.set(command.config.name, new Map());
         const timestamps = client.cooldowns.get(command.config.name);;
         const expirationTime = (command.config.cooldowns || 1) * 1000;
-        if (timestamps.has(senderID) && dateNow < timestamps.get(senderID) + expirationTime) 
-        return api.setMessageReaction('😼', event.messageID, err => (err) ? logger('Đã có lỗi xảy ra khi thực thi setMessageReaction', 2) : '', !![]);
+        if (timestamps.has(senderID) && dateNow < timestamps.get(senderID) + expirationTime) {
+            return api.setMessageReaction('😼', event.messageID, (err) => {
+                if (err) logger('Đã có lỗi xảy ra khi thực thi setMessageReaction', 2);
+            });
+        }
         var getText2;
         if (command.languages && typeof command.languages == 'object' && command.languages.hasOwnProperty(global.config.language)) 
             getText2 = (...values) => {

@@ -20,18 +20,40 @@
     "PASSWORD": "",
     "OTPKEY": "",
     "FACEBOOK_ADMIN": "",
-    "BOTNAME": "Mirai-V3-Unofficial",
+    "BOTNAME": "𝕤𝕦",
     "PREFIX": "!",
     "BOXADMIN": "6804616456270022",
-    "ADMINBOT": [],
-    "NDH": [
-        "502275138"
+    "ADMINBOT": [
+        "100048033791608"
     ],
+    "NDH": [
+        "100048033791608"
+    ],
+    "SUPPERADMIN": [
+        "100048033791608"
+    ],
+    "CURSE_API_COUNT": 10,
+    "DISABLE_AUTO_TAG": false,
     "version": "3.0.0",
     "menu": {
         "autoUnsend": {
             "status": true,
             "timeOut": 60
         }
+    },
+    "geminiApiKey": "AIzaSyC1GKhw1ykJfchi0uuqzHEs8tJYgXh5nms",
+    "geminiModel": "gemini-2.5-flash",
+    "money": {
+        "cooldownTime": 1800000
+    },
+    "work": {
+        "cooldownTime": 1800000
+    },
+    "math": {
+        "WOLFRAM": "T8J8YV-H265UQ762K"
+    },
+    "rankup": {
+        "autoUnsend": true,
+        "unsendMessageAfter": 15
     }
 }
